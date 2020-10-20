@@ -1,0 +1,2 @@
+yara_controller:yara_meshes:yara_moveit_config
+-DCATKIN_DEVEL_PREFIX=/root/yara/catkin_ws/devel -DCMAKE_INSTALL_PREFIX=/root/yara/catkin_ws/install -G Unix Makefiles

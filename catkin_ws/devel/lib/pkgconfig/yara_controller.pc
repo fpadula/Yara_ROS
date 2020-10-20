@@ -1,0 +1,8 @@
+prefix=/root/yara/catkin_ws/devel
+
+Name: yara_controller
+Description: Description of yara_controller
+Version: 0.0.0
+Cflags: -I/root/yara/catkin_ws/src/yara_controller/include
+Libs: -L${prefix}/lib 
+Requires: control_msgs actionlib actionlib_msgs

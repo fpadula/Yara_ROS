@@ -1,0 +1,11 @@
+moveit_setup_assistant_config:
+  URDF:
+    package: yara_meshes
+    relative_path: files/yara.urdf.xacro
+    xacro_args: ""
+  SRDF:
+    relative_path: config/yara.srdf
+  CONFIG:
+    author_name: Felipe Padula Sanches
+    author_email: fpadula92@gmail.com
+    generated_timestamp: 1603115962

@@ -1,0 +1,2 @@
+set(yara_controller_MESSAGE_FILES "")
+set(yara_controller_SERVICE_FILES "")

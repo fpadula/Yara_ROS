@@ -1,0 +1,8 @@
+prefix=/root/yara/catkin_ws/install
+
+Name: yara_meshes
+Description: Description of yara_meshes
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 
