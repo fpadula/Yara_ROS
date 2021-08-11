@@ -1,5 +1,5 @@
 <launch>
-  <node pkg="yara_controller" name="yara_low_level_controller" output="screen" type="controller"/>
+  <!-- <node pkg="yara_controller" name="yara_low_level_controller" output="screen" type="controller"/> -->
 
   <!-- specify the planning pipeline -->
   <arg name="pipeline" default="ompl" />

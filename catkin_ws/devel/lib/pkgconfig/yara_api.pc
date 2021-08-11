@@ -1,0 +1,8 @@
+prefix=/root/yara/catkin_ws/devel
+
+Name: yara_api
+Description: Description of yara_api
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

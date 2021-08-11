@@ -19,7 +19,8 @@
 #include <thread>
 
 #include <sstream>
-#include <YaraLowLevelComm.h>
+// #include <YaraLowLevelComm.h>
+#include <SerialComm.h>
 
 #define PORT 1337
 
@@ -31,9 +32,9 @@ class Yara_FJT_Action{
         // create messages that are used to published feedback/result
         control_msgs::FollowJointTrajectoryFeedback feedback_;
         control_msgs::FollowJointTrajectoryResult result_;
-        YaraLowLevelComm *comm;
+        SerialComm *comm;
     public:
-        Yara_FJT_Action(YaraLowLevelComm *comm, std::string name) : as_(nh_, name, boost::bind(&Yara_FJT_Action::executeCB, this, _1), false),action_name_(name){
+        Yara_FJT_Action(SerialComm *comm, std::string name) : as_(nh_, name, boost::bind(&Yara_FJT_Action::executeCB, this, _1), false),action_name_(name){
             this->comm = comm;
             as_.start();
         }
@@ -46,38 +47,27 @@ class Yara_FJT_Action{
             ros::Rate r(1);
             bool success = true;
             const trajectory_msgs::JointTrajectoryPoint *cp;
-            float joint_pos[6], joint_vel[6], joint_pos_t[100][6], joint_vel_t[100][6];;
-
-            
-
-            // // push_back the seeds for the fibonacci sequence
-            // feedback_.sequence.clear();
-            // feedback_.sequence.push_back(0);
-            // feedback_.sequence.push_back(1);
+            float joint_pos[6], joint_vel[6], joint_pos_t[100][6], joint_vel_t[100][6];
 
             // publish info to the console for the user
-            ROS_INFO("%s: Executing goal!", action_name_.c_str());            
+            ROS_INFO("%s: Executing goal! Size %d", action_name_.c_str(), (int)goal->trajectory.points.size());
             // ROS_INFO("First point: %f", goal->trajectory.points[0].positions[0]);
-            // Sending whole trajectory:
             for (int i = 0; i < goal->trajectory.points.size(); i++){
                 cp = &goal->trajectory.points[i];
-                joint_pos_t[i][0] = cp->positions[0];
-                joint_pos_t[i][1] = cp->positions[1];
-                joint_pos_t[i][2] = cp->positions[2];
-                joint_pos_t[i][3] = cp->positions[3];
-                joint_pos_t[i][4] = cp->positions[4];
-                joint_pos_t[i][5] = cp->positions[5];
+                joint_pos[0] = cp->positions[0];
+                joint_pos[1] = cp->positions[1];
+                joint_pos[2] = cp->positions[2];
+                joint_pos[3] = cp->positions[3];
+                joint_pos[4] = cp->positions[4];
+                joint_pos[5] = cp->positions[5];
 
-                joint_vel_t[i][0] = 0.523599; // 5 degrees/s
-                joint_vel_t[i][1] = 0.523599; // 5 degrees/s
-                joint_vel_t[i][2] = 0.523599; // 5 degrees/s
-                joint_vel_t[i][3] = 0.523599; // 5 degrees/s
-                joint_vel_t[i][4] = 0.523599; // 5 degrees/s
-                joint_vel_t[i][5] = 0.523599; // 5 degrees/s
-            }
-            this->comm->send_joint_pos_vel_t(joint_pos_t, joint_vel_t, goal->trajectory.points.size());
-            // Iterating between all the trajectory points:
-            for (int i = 0; i < goal->trajectory.points.size(); i++){
+                // joint_vel_t[i][0] = 0.523599; // 5 degrees/s
+                // joint_vel_t[i][1] = 0.523599; // 5 degrees/s
+                // joint_vel_t[i][2] = 0.523599; // 5 degrees/s
+                // joint_vel_t[i][3] = 0.523599; // 5 degrees/s
+                // joint_vel_t[i][4] = 0.523599; // 5 degrees/s
+                // joint_vel_t[i][5] = 0.523599; // 5 degrees/s
+                this->comm->set_angles(joint_pos, false);
                 // check that preempt has not been requested by the client
                 if (as_.isPreemptRequested() || !ros::ok()){
                     ROS_INFO("%s: Preempted", action_name_.c_str());
@@ -86,46 +76,34 @@ class Yara_FJT_Action{
                     success = false;
                     break;
                 }
-
-                // cp = &goal->trajectory.points[i];
-                // joint_pos[0] = cp->positions[0];
-                // joint_pos[1] = cp->positions[1];
-                // joint_pos[2] = cp->positions[2];
-                // joint_pos[3] = cp->positions[3];
-                // joint_pos[4] = cp->positions[4];
-                // joint_pos[5] = cp->positions[5];
-
-                // joint_vel[0] = 0.523599; // 5 degrees/s
-                // joint_vel[1] = 0.523599; // 5 degrees/s
-                // joint_vel[2] = 0.523599; // 5 degrees/s
-                // joint_vel[3] = 0.523599; // 5 degrees/s
-                // joint_vel[4] = 0.523599; // 5 degrees/s
-                // joint_vel[5] = 0.523599; // 5 degrees/s
-                
+                ROS_INFO("Waiting point %d", i);
                 success = success && this->comm->wait_position_set();
-                // success = success && this->comm->send_joint_pos_vel(joint_pos, joint_vel);
+                // this->comm->join_thread();
+                ROS_INFO("Done!");
                 feedback_.header.stamp = ros::Time::now();
-                // feedback_.sequence.push_back(feedback_.sequence[i] + feedback_.sequence[i - 1]);
-                // publish the feedback
                 as_.publishFeedback(feedback_);
-                // this sleep is not necessary, the sequence is computed at 1 Hz for demonstration purposes
-                // r.sleep();
                 if(!success){
                     ROS_INFO("%s: Failure!", action_name_.c_str());
                     break;
                 }
             }
-
+            
             if (success){
                 result_.error_code = result_.SUCCESSFUL;
                 ROS_INFO("%s: Succeeded", action_name_.c_str());
                 // set the action state to succeeded
                 as_.setSucceeded(result_);
             }
+            else{
+                result_.error_code = result_.SUCCESSFUL;
+                ROS_INFO("%s: FAILED", action_name_.c_str());
+                // set the action state to succeeded
+                as_.setSucceeded(result_);
+            }
         }
 };
 
-void js_publisher(ros::NodeHandle *n, int loop_freq, YaraLowLevelComm *comm){
+void js_publisher(ros::NodeHandle *n, int loop_freq, SerialComm *comm){
     ros::Rate loop_rate(loop_freq);
     sensor_msgs::JointState js;
     ros::Publisher chatter_pub = n->advertise<sensor_msgs::JointState>("joint_states", 1000);
@@ -135,21 +113,23 @@ void js_publisher(ros::NodeHandle *n, int loop_freq, YaraLowLevelComm *comm){
     js.name.push_back("link_2_to_link_3");
     js.name.push_back("link_3_to_link_4");
     js.name.push_back("link_4_to_link_5");
-    js.name.push_back("link_5_to_link_6");
+    js.name.push_back("link_5_to_palm");
+    js.name.push_back("palm_to_servo_gear");
 
-    for (int i = 0; i < 6; i++)
+    for (int i = 0; i < 7; i++)
         js.position.push_back(0.0);
 
     while (ros::ok())
     {
         js.header.stamp = ros::Time::now();
 
-        js.position[0] = comm->last_read_joint_positions[0];
-        js.position[1] = comm->last_read_joint_positions[1];
-        js.position[2] = comm->last_read_joint_positions[2];
-        js.position[3] = comm->last_read_joint_positions[3];
-        js.position[4] = comm->last_read_joint_positions[4];
-        js.position[5] = comm->last_read_joint_positions[5];
+        js.position[0] = comm->current_joint_pos[0];
+        js.position[1] = comm->current_joint_pos[1];
+        js.position[2] = comm->current_joint_pos[2];
+        js.position[3] = comm->current_joint_pos[3];
+        js.position[4] = comm->current_joint_pos[4];
+        js.position[5] = comm->current_joint_pos[5];
+        js.position[5] = comm->current_joint_pos[6];
         chatter_pub.publish(js);
 
         ros::spinOnce();
@@ -160,9 +140,25 @@ void js_publisher(ros::NodeHandle *n, int loop_freq, YaraLowLevelComm *comm){
 
 int main(int argc, char **argv){
     ROS_INFO("Starting Yara low level comm...");
-    YaraLowLevelComm comm("yara.local", 1337);
+    // YaraLowLevelComm comm("yara.local", 1337);
+    SerialComm comm = SerialComm("/dev/ttyUSB0");
     ROS_INFO("Done!");
-
+    comm.update_arm_info();
+    printf("\tJoint positions:\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\n",
+            comm.current_joint_pos[0], comm.current_joint_pos[1],
+            comm.current_joint_pos[2], comm.current_joint_pos[3],
+            comm.current_joint_pos[4], comm.current_joint_pos[5],
+            comm.current_joint_pos[6]);                        
+    printf("\tJoint velocities:\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\n",
+            comm.current_joint_vel[0], comm.current_joint_vel[1],
+            comm.current_joint_vel[2], comm.current_joint_vel[3],
+            comm.current_joint_vel[4], comm.current_joint_vel[5],
+            comm.current_joint_vel[6]);                        
+    printf("\tJoint accelerations:\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\n",
+            comm.current_joint_acc[0], comm.current_joint_acc[1],
+            comm.current_joint_acc[2], comm.current_joint_acc[3],
+            comm.current_joint_acc[4], comm.current_joint_acc[5],
+            comm.current_joint_acc[6]);
     ROS_INFO("Starting Yara Action Server...");
     ros::init(argc, argv, "yara_controller");
     ros::NodeHandle n;
@@ -179,5 +175,5 @@ int main(int argc, char **argv){
     ROS_INFO("Done!");
     ros::spin();
 
-    return 0;    
+    return 0;
 }

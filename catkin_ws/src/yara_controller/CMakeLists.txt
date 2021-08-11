@@ -218,6 +218,6 @@ include_directories(
 # catkin_add_nosetests(test)
 
 
-add_executable(controller src/controller_node.cpp src/YaraLowLevelComm.cpp)
+add_executable(controller src/controller_node.cpp src/SerialComm.cpp src/YaraLowLevelComm.cpp)
 target_link_libraries(controller ${catkin_LIBRARIES})
 # add_dependencies(controller control_msgs actionlib_msgs)

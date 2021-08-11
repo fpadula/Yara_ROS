@@ -37,8 +37,7 @@ bool YaraLowLevelComm::wait_position_set(){
     int curr_loop, max_loops;
 
     curr_loop = 0;
-    max_loops = 10000;
-    this->position_set = false;
+    max_loops = 50000;    
     while(!this->position_set){
         if(curr_loop > max_loops){ // Taking too long -> fail
             return false;
@@ -63,7 +62,8 @@ void YaraLowLevelComm::send_joint_pos_vel_t(float joint_pos[100][6], float joint
         memset(local_send_buffer, 0, sizeof(local_send_buffer));
         sprintf(local_send_buffer, "%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,", joint_pos[i][0], joint_pos[i][1], joint_pos[i][2], joint_pos[i][3], joint_pos[i][4], joint_pos[i][5], joint_vel[i][0], joint_vel[i][1], joint_vel[i][2], joint_vel[i][3], joint_vel[i][4], joint_vel[i][5]);
         strcat(this->send_buffer,local_send_buffer);
-    }    
+    }
+    this->position_set = false;
     this->send_t_msg = true;
 }
 
@@ -179,18 +179,19 @@ void YaraLowLevelComm::communication_handler(){
             send(this->sock , (void*)&length, 4, 0);
             // Sending buffer data:
             ROS_INFO("Sending buffer of size %u", length);
-            send(this->sock , this->send_buffer, length, 0);
+            send(this->sock , this->send_buffer, length, 0);            
         }
         // Reading message from server:
         // Setting buffer to 0:
         memset(read_buffer, 0, sizeof(read_buffer));
         // First we need to read the message length:
         this->readXBytes(this->sock, 4, (void*)&length);
-        // Then we read the message if length is bigger than 0:
+        // Then we read the message if length is bigger than 0:        
         if(length > 0){
             this->readXBytes(this->sock, length, (void*)read_buffer);
             // std::cout << "[" << length << "]" << read_buffer <<std::endl;
             // Parsing message:
+            // ROS_INFO("Read buffer of size %u. Message: %s", length, read_buffer);
             if(strcmp("done",read_buffer) == 0){
                 // This is a done message, so done_flag must be set to true:
                 this->position_set = true;
